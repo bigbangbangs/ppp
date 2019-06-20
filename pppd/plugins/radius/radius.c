@@ -43,10 +43,12 @@ static char const RCSID[] =
 #include <string.h>
 #include <netinet/in.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #define BUF_LEN 1024
 
 #define MD5_HASH_SIZE	16
+#define AUTO_ADD_CALLING_STATION_ID 1
 
 #define MSDNS 1
 
@@ -251,7 +253,13 @@ radius_pap_auth(char *user,
     UINT4 av_type;
     int result;
     static char radius_msg[BUF_LEN];
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    char calling_station_id[MAXNAMELEN];
+    memset(calling_station_id, 0x0, sizeof(calling_station_id));
+    char *caller_id = getenv("CALLER_ID");
+    if(caller_id)
+	strncpy(calling_station_id, caller_id, sizeof(calling_station_id)); 
+#endif
     radius_msg[0] = 0;
     *msgp = radius_msg;
 
@@ -288,7 +296,10 @@ radius_pap_auth(char *user,
 		       VENDOR_NONE);
     } else if (ipparam)
 	rc_avpair_add(&send, PW_CALLING_STATION_ID, ipparam, 0, VENDOR_NONE);
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    else if(calling_station_id[0] != 0)
+	rc_avpair_add(&send, PW_CALLING_STATION_ID, calling_station_id, 0, VENDOR_NONE);
+#endif
     /* Add user specified vp's */
     if (rstate.avp)
 	rc_avpair_insert(&send, NULL, rc_avpair_copy(rstate.avp));
@@ -348,7 +359,13 @@ radius_chap_verify(char *user, char *ourname, int id,
 #else
     REQUEST_INFO *req_info = NULL;
 #endif
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    char calling_station_id[MAXNAMELEN];
+    memset(calling_station_id, 0x0, sizeof(calling_station_id));
+    char *caller_id = getenv("CALLER_ID");
+    if(caller_id)
+        strncpy(calling_station_id, caller_id, sizeof(calling_station_id));
+#endif
     challenge_len = *challenge++;
     response_len = *response++;
 
@@ -455,7 +472,10 @@ radius_chap_verify(char *user, char *ourname, int id,
 		       VENDOR_NONE);
     } else if (ipparam)
 	rc_avpair_add(&send, PW_CALLING_STATION_ID, ipparam, 0, VENDOR_NONE);
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    else if(calling_station_id[0] != 0)
+        rc_avpair_add(&send, PW_CALLING_STATION_ID, calling_station_id, 0, VENDOR_NONE);
+#endif
     /* Add user specified vp's */
     if (rstate.avp)
 	rc_avpair_insert(&send, NULL, rc_avpair_copy(rstate.avp));
@@ -895,7 +915,13 @@ radius_acct_start(void)
     if (!rstate.initialized) {
 	return;
     }
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    char calling_station_id[MAXNAMELEN];
+    memset(calling_station_id, 0x0, sizeof(calling_station_id));
+    char *caller_id = getenv("CALLER_ID");
+    if(caller_id)
+        strncpy(calling_station_id, caller_id, sizeof(calling_station_id));
+#endif
     rstate.start_time = time(NULL);
 
     strlcpy(rstate.session_id, rc_mksid(), MAXSESSIONID);
@@ -923,7 +949,10 @@ radius_acct_start(void)
 		       remote_number, 0, VENDOR_NONE);
     } else if (ipparam)
 	rc_avpair_add(&send, PW_CALLING_STATION_ID, ipparam, 0, VENDOR_NONE);
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    else if(calling_station_id[0] != 0)
+        rc_avpair_add(&send, PW_CALLING_STATION_ID, calling_station_id, 0, VENDOR_NONE);
+#endif
     av_type = PW_RADIUS;
     rc_avpair_add(&send, PW_ACCT_AUTHENTIC, &av_type, 0, VENDOR_NONE);
 
@@ -986,7 +1015,13 @@ radius_acct_stop(void)
     if (!rstate.accounting_started) {
 	return;
     }
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    char calling_station_id[MAXNAMELEN];
+    memset(calling_station_id, 0x0, sizeof(calling_station_id));
+    char *caller_id = getenv("CALLER_ID");
+    if(caller_id)
+        strncpy(calling_station_id, caller_id, sizeof(calling_station_id));
+#endif
     if (rstate.acct_interim_interval)
 	UNTIMEOUT(radius_acct_interim, NULL);
 
@@ -1035,7 +1070,10 @@ radius_acct_stop(void)
 		       remote_number, 0, VENDOR_NONE);
     } else if (ipparam)
 	rc_avpair_add(&send, PW_CALLING_STATION_ID, ipparam, 0, VENDOR_NONE);
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    else if(calling_station_id[0] != 0)
+        rc_avpair_add(&send, PW_CALLING_STATION_ID, calling_station_id, 0, VENDOR_NONE);
+#endif
     av_type = ( using_pty ? PW_VIRTUAL : ( sync_serial ? PW_SYNC : PW_ASYNC ) );
     rc_avpair_add(&send, PW_NAS_PORT_TYPE, &av_type, 0, VENDOR_NONE);
 
@@ -1138,7 +1176,13 @@ radius_acct_interim(void *ignored)
     if (!rstate.accounting_started) {
 	return;
     }
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    char calling_station_id[MAXNAMELEN];
+    memset(calling_station_id, 0x0, sizeof(calling_station_id));
+    char *caller_id = getenv("CALLER_ID");
+    if(caller_id)
+        strncpy(calling_station_id, caller_id, sizeof(calling_station_id));
+#endif
     rc_avpair_add(&send, PW_ACCT_SESSION_ID, rstate.session_id,
 		   0, VENDOR_NONE);
 
@@ -1187,7 +1231,10 @@ radius_acct_interim(void *ignored)
 		       remote_number, 0, VENDOR_NONE);
     } else if (ipparam)
 	rc_avpair_add(&send, PW_CALLING_STATION_ID, ipparam, 0, VENDOR_NONE);
-
+#ifdef AUTO_ADD_CALLING_STATION_ID
+    else if(calling_station_id[0] != 0)
+        rc_avpair_add(&send, PW_CALLING_STATION_ID, calling_station_id, 0, VENDOR_NONE);
+#endif
     av_type = ( using_pty ? PW_VIRTUAL : ( sync_serial ? PW_SYNC : PW_ASYNC ) );
     rc_avpair_add(&send, PW_NAS_PORT_TYPE, &av_type, 0, VENDOR_NONE);
 
