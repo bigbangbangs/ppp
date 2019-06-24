@@ -616,9 +616,19 @@ radius_setparams(VALUE_PAIR *vp, char *msg, REQUEST_INFO *req_info,
                script_setenv("RADIUS_FILTER_ID", vp->strvalue, 1);
                break;
            case PW_FRAMED_ROUTE:
+           {
                /* route, will be handled via ip-(up|down) script */
-               script_setenv("RADIUS_FRAMED_ROUTE", vp->strvalue, 1);
+#if 0
+        	   script_setenv("RADIUS_FRAMED_ROUTE", vp->strvalue, 1);
+#else
+       		 char *route = vp->strvalue;
+            notice("radius_setparams: get FRAMED_ROUTE:%s", route);
+       	   	if(route) {
+                 setenv("RADIUS_FRAMED_ROUTE", route, 1);
+            }
+#endif
                break;
+           }
            case PW_IDLE_TIMEOUT:
                /* idle parameter */
                idle_time_limit = vp->lvalue;

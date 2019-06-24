@@ -1960,6 +1960,12 @@ ipcp_up(f)
 	ipcp_script_state = s_up;
 	ipcp_script(_PATH_IPUP, 0);
     }
+    /* try to add callback route*/
+    char *route_env = getenv("RADIUS_FRAMED_ROUTE");
+    if(route_env){
+    	notice("ipcp_up: try to add callback route\r\n");
+    	add_dynamic_route(route_env, ipcp_hisoptions[0].hisaddr);
+    }
 }
 
 

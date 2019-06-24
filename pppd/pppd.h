@@ -556,6 +556,7 @@ void dump_packet __P((const char *, u_char *, int));
 				/* dump packet to debug log if interesting */
 ssize_t complete_read __P((int, void *, size_t));
 				/* read a complete buffer */
+int add_dynamic_route __P((const char *, u_int32_t )); /*  add dymanic route */
 
 /* Procedures exported from auth.c */
 void link_required __P((int));	  /* we are starting to use the link */
@@ -679,6 +680,7 @@ int  sif6addr __P((int, eui64_t, eui64_t));
 int  cif6addr __P((int, eui64_t, eui64_t));
 				/* Remove an IPv6 address from i/f */
 #endif
+int  sifstaticroute  __P((u_int32_t, u_int32_t, u_int32_t));
 int  sifdefaultroute __P((int, u_int32_t, u_int32_t));
 				/* Create default route through i/f */
 int  cifdefaultroute __P((int, u_int32_t, u_int32_t));

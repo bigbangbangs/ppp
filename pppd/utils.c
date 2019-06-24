@@ -1039,3 +1039,28 @@ unlock()
     }
 }
 
+int add_dynamic_route(const char *route, u_int32_t gateway){
+   int n_bits;
+   char *widp, buf[64];
+   char *ip;
+   char mask[32];
+   strlcpy(buf, route, sizeof(buf));
+   if((widp = strchr(buf, '/')) != NULL)
+     *widp++ = '\0';
+   else
+     widp = buf + strlen(buf);
+   /* get the ip address part*/
+   ip = buf;
+   if(*widp){
+      if((n_bits = atoi(widp)) < 0)
+        return -1;
+   }else
+     n_bits = 32;
+   if(n_bits < 0 || n_bits > 32)
+	   return -1;
+// notice("try to add route: ip:%s, mask:%d, gateway:%d.", route, n_bits, gateway);
+ u_int32_t m = 0xffffffff << (32 - n_bits);
+  if(sifstaticroute(inet_addr(ip), htonl(m), gateway) == 0)
+    return -1;
+  return 0;
+}

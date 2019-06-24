@@ -1675,6 +1675,42 @@ int sifdefaultroute (int unit, u_int32_t ouraddr, u_int32_t gateway)
 
 /********************************************************************
  *
+ * sifstaticroute - assign a static route through the address given.
+ */
+
+int sifstaticroute(u_int32_t destaddr, u_int32_t mask, u_int32_t gateway){
+  struct rtentry rt;
+  memset(&rt, 0x0, sizeof(rt));
+
+  SET_SA_FAMILY(rt.rt_dst, AF_INET);
+  SIN_ADDR(rt.rt_dst) = destaddr;
+
+  rt.rt_dev = ifname;
+
+  SET_SA_FAMILY(rt.rt_genmask, AF_INET);
+  SIN_ADDR(rt.rt_genmask) = mask;
+
+  SET_SA_FAMILY(rt.rt_gateway, AF_INET);
+  SIN_ADDR(rt.rt_gateway) = gateway;
+
+  if(destaddr != 0)
+    rt.rt_flags = RTF_UP  | RTF_GATEWAY;
+  else
+    rt.rt_flags = RTF_UP;
+ rt.rt_metric = 0;
+
+ //notice("sifstaticroute: ready to add route: dst_ip:0x%x, netmask:0x%x, gateway:0x%x, interface:%s",destaddr ,mask, gateway, ifname );
+  if(ioctl(sock_fd, SIOCADDRT, &rt) < 0){
+    if(! ok_error( error))
+     error("add route ioctl(SIOCADDRT): %m");
+    return 0;
+  }
+  notice("sifstaticroute: add route success");
+  return 1;
+}
+
+/********************************************************************
+ *
  * cifdefaultroute - delete a default route through the address given.
  */
 
