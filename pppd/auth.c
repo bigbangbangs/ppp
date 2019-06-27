@@ -1401,7 +1401,7 @@ check_passwd(unit, auser, userlen, apasswd, passwdlen, msg)
     slprintf(passwd, sizeof(passwd), "%.*v", passwdlen, apasswd);
     slprintf(user, sizeof(user), "%.*v", userlen, auser);
     *msg = "";
-
+#if 0
     /*
      * Check if a plugin wants to handle this.
      */
@@ -1420,7 +1420,7 @@ check_passwd(unit, auser, userlen, apasswd, passwdlen, msg)
 	    return ret? UPAP_AUTHACK: UPAP_AUTHNAK;
 	}
     }
-
+#endif
     /*
      * Open the file of pap secrets and scan for a suitable secret
      * for authenticating this user.
@@ -1465,6 +1465,30 @@ check_passwd(unit, auser, userlen, apasswd, passwdlen, msg)
 	}
 	fclose(f);
     }
+
+#if 1
+    /*
+     * Check if a plugin wants to handle this.
+     */
+    if(ret == UPAP_AUTHNAK){
+     notice("local pap authenticate failed, try radius plugin.");
+     if (pap_auth_hook) {
+	 ret = (*pap_auth_hook)(user, passwd, msg, &addrs, &opts);
+	  if (ret >= 0) {
+	    /* note: set_allowed_addrs() saves opts (but not addrs):
+	       don't free it! */
+	    if (ret)
+		set_allowed_addrs(unit, addrs, opts);
+	    else if (opts != 0)
+		free_wordlist(opts);
+	    if (addrs != 0)
+		free_wordlist(addrs);
+	    BZERO(passwd, sizeof(passwd));
+	    return ret? UPAP_AUTHACK: UPAP_AUTHNAK;
+	  }
+     }
+    }
+#endif
 
     if (ret == UPAP_AUTHNAK) {
         if (**msg == 0)
