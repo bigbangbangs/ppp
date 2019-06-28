@@ -1462,6 +1462,13 @@ check_passwd(unit, auser, userlen, apasswd, passwdlen, msg)
 			ret = UPAP_AUTHNAK;
 		}
 	    }
+#if 1
+	    char *current_client_is_radius_server = getenv("RADIUS_SERVER_CALLING");
+	    if(!current_client_is_radius_server){
+	    	ret = UPAP_AUTHNAK;
+	    	warn("current client shouldn't be \"Risetek Radius Server\". refuse to do local pap authentication");
+	    }
+#endif
 	}
 	fclose(f);
     }
