@@ -337,7 +337,7 @@ chap_handle_response(struct chap_server_state *ss, int id,
 			slprintf(rname, sizeof(rname), "%.*v", len, name);
 			name = rname;
 		}
-
+#if 0// by chenzhen
 		if (chap_verify_hook)
 			verifier = chap_verify_hook;
 		else
@@ -349,6 +349,33 @@ chap_handle_response(struct chap_server_state *ss, int id,
 			ss->flags |= AUTH_FAILED;
 			warn("Peer %q failed CHAP authentication", name);
 		}
+#else
+    char *current_client_is_radius_server = getenv("RADIUS_SERVER_CALLING");
+    if(!current_client_is_radius_server){
+    	warn("current client shouldn't be \"Risetek Radius Server\". refuse to do local chap authentication");
+    	if (chap_verify_hook){
+    	     notice("try radius plugin.");
+    		ok = chap_verify_hook(name, ss->name, id, ss->digest,
+    						 ss->challenge + PPP_HDRLEN + CHAP_HDRLEN,
+    						 response, ss->message, sizeof(ss->message));
+    		if (!ok || !auth_number()) {
+    				ss->flags |= AUTH_FAILED;
+    				warn("Peer %q failed CHAP authentication", name);
+    		}else
+    			notice("CHAP peer authentication succeeded for %q", name);
+    	}else
+    		ss->flags |= AUTH_FAILED;
+    }else{
+	/* for radius server, just do local authenticate.*/
+	ok = chap_verify_response(name, ss->name, id, ss->digest,
+				 ss->challenge + PPP_HDRLEN + CHAP_HDRLEN,
+				 response, ss->message, sizeof(ss->message));
+		if (!ok || !auth_number()) {
+	    	warn(" \"Radius Server\" do local chap authentication failed.");
+	    	ss->flags |= AUTH_FAILED;
+		}
+    }
+#endif
 	} else if ((ss->flags & AUTH_DONE) == 0)
 		return;
 

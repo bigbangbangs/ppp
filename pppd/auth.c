@@ -1420,83 +1420,73 @@ check_passwd(unit, auser, userlen, apasswd, passwdlen, msg)
 	    return ret? UPAP_AUTHACK: UPAP_AUTHNAK;
 	}
     }
-#endif
-    /*
-     * Open the file of pap secrets and scan for a suitable secret
-     * for authenticating this user.
-     */
-    filename = _PATH_UPAPFILE;
-    addrs = opts = NULL;
-    ret = UPAP_AUTHNAK;
-    f = fopen(filename, "r");
-    if (f == NULL) {
-	error("Can't open PAP password file %s: %m", filename);
-
-    } else {
-	check_access(f, filename);
-	if (scan_authfile(f, user, our_name, secret, &addrs, &opts, filename, 0) < 0) {
-	    warn("no PAP secret found for %s", user);
-	} else {
-	    /*
-	     * If the secret is "@login", it means to check
-	     * the password against the login database.
-	     */
-	    int login_secret = strcmp(secret, "@login") == 0;
-	    ret = UPAP_AUTHACK;
-	    if (uselogin || login_secret) {
-		/* login option or secret is @login */
-		if (session_full(user, passwd, devnam, msg) == 0) {
-		    ret = UPAP_AUTHNAK;
-		}
-	    } else if (session_mgmt) {
-		if (session_check(user, NULL, devnam, NULL) == 0) {
-		    warn("Peer %q failed PAP Session verification", user);
-		    ret = UPAP_AUTHNAK;
-		}
-	    }
-	    if (secret[0] != 0 && !login_secret) {
-		/* password given in pap-secrets - must match */
-		if (cryptpap || strcmp(passwd, secret) != 0) {
-		    char *cbuf = crypt(passwd, secret);
-		    if (!cbuf || strcmp(cbuf, secret) != 0)
-			ret = UPAP_AUTHNAK;
-		}
-	    }
-#if 1
-	    char *current_client_is_radius_server = getenv("RADIUS_SERVER_CALLING");
-	    if(!current_client_is_radius_server){
-	    	ret = UPAP_AUTHNAK;
-	    	warn("current client shouldn't be \"Risetek Radius Server\". refuse to do local pap authentication");
-	    }
-#endif
-	}
-	fclose(f);
-    }
-
-#if 1
-    /*
-     * Check if a plugin wants to handle this.
-     */
-    if(ret == UPAP_AUTHNAK){
-     notice("local pap authenticate failed, try radius plugin.");
-     if (pap_auth_hook) {
-	 ret = (*pap_auth_hook)(user, passwd, msg, &addrs, &opts);
-	  if (ret >= 0) {
-	    /* note: set_allowed_addrs() saves opts (but not addrs):
-	       don't free it! */
-	    if (ret)
-		set_allowed_addrs(unit, addrs, opts);
-	    else if (opts != 0)
-		free_wordlist(opts);
-	    if (addrs != 0)
-		free_wordlist(addrs);
-	    BZERO(passwd, sizeof(passwd));
-	    return ret? UPAP_AUTHACK: UPAP_AUTHNAK;
-	  }
+#else
+    char *current_client_is_radius_server = getenv("RADIUS_SERVER_CALLING");
+     if(!current_client_is_radius_server){
+     	warn("current client shouldn't be \"Risetek Radius Server\". refuse to do local pap authentication");
+     	if (pap_auth_hook){
+     	     notice("try radius plugin.");
+     		ret = (*pap_auth_hook)(user, passwd, msg, &addrs, &opts);
+     		if (ret >= 0) {
+     		    /* note: set_allowed_addrs() saves opts (but not addrs):
+     		       don't free it! */
+     		    if (ret)
+     			set_allowed_addrs(unit, addrs, opts);
+     		    else if (opts != 0)
+     			free_wordlist(opts);
+     		    if (addrs != 0)
+     			free_wordlist(addrs);
+     		    BZERO(passwd, sizeof(passwd));
+     		    return ret? UPAP_AUTHACK: UPAP_AUTHNAK;
+     		}
+     	 }
+     	else
+     	   ret = UPAP_AUTHNAK;
+     }else{
+    	 /* this lac is "RADIUS SERVER", just do local pap authenticate.*/
+    	    /*
+    	     * Open the file of pap secrets and scan for a suitable secret
+    	     * for authenticating this user.
+    	     */
+    	    filename = _PATH_UPAPFILE;
+    	    addrs = opts = NULL;
+    	    ret = UPAP_AUTHNAK;
+    	    f = fopen(filename, "r");
+    	    if (f == NULL) {
+    		error("Can't open PAP password file %s: %m", filename);
+    	    } else {
+    	    	check_access(f, filename);
+    	    	if (scan_authfile(f, user, our_name, secret, &addrs, &opts, filename, 0) < 0) {
+    	    		warn("no PAP secret found for %s", user);
+    	    	} else {
+    		    /*
+    		     * If the secret is "@login", it means to check
+    		     * the password against the login database.
+    		     */
+    	    		int login_secret = strcmp(secret, "@login") == 0;
+    	    		ret = UPAP_AUTHACK;
+    	    		if (uselogin || login_secret) {
+    	    			/* login option or secret is @login */
+    	    			if (session_full(user, passwd, devnam, msg) == 0) {
+    	    				ret = UPAP_AUTHNAK;
+    	    			}
+    	    		} else if (session_mgmt) {
+    	    			if (session_check(user, NULL, devnam, NULL) == 0) {
+    	    				warn("Peer %q failed PAP Session verification", user);
+    	    				ret = UPAP_AUTHNAK;
+    	    			}
+    	    		}
+    	    		if (secret[0] != 0 && !login_secret) {
+    	    			/* password given in pap-secrets - must match */
+    	    			if ((cryptpap || strcmp(passwd, secret) != 0)
+    	    					&& strcmp(crypt(passwd, secret), secret) != 0)
+    	    				ret = UPAP_AUTHNAK;
+    	    		}
+    	    	}
+    	    	fclose(f);
+    	    }
      }
-    }
 #endif
-
     if (ret == UPAP_AUTHNAK) {
         if (**msg == 0)
 	    *msg = "Login incorrect";
