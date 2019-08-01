@@ -2029,20 +2029,21 @@ auth_ip_addr(unit, addr)
     /* don't allow loopback or multicast address */
     if (bad_ip_adrs(addr))
 	return 0;
-
+#if 0 // by chenz
     if (allowed_address_hook) {
 	ok = allowed_address_hook(addr);
 	if (ok >= 0) return ok;
     }
-
+#endif
     if (addresses[unit] != NULL) {
 	ok = ip_addr_check(addr, addresses[unit]);
 	if (ok >= 0)
 	    return ok;
     }
-
+#if 0 // by chenz
     if (auth_required)
 	return 0;		/* no addresses authorized */
+#endif
     return allow_any_ip || privileged || !have_route_to(addr);
 }
 
