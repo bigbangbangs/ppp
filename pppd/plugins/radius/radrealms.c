@@ -25,8 +25,8 @@ static char const RCSID[] =
 
 char pppd_version[] = VERSION;
 
-//char radrealms_config[MAXPATHLEN] = "/etc/radiusclient/realms";
-static char *radrealms_config =  "/etc/radiusclient/realms";
+static char radrealms_config[MAXPATHLEN] = "/etc/radiusclient/realms";
+//static char *radrealms_config =  "/etc/radiusclient/realms";
 
 static option_t Options[] = {
     { "realms-config-file", o_string, &radrealms_config,
